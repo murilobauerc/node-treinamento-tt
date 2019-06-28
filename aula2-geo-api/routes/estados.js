@@ -1,25 +1,44 @@
 const express = require('express')
-const router = express.Router
-const ESTADOS = require('../assets/estados.json')
+const router = express.Router()
+const mongo = require('../data/mongo')
+const cidadesRouter = require('./cidades')
 
-
-router.get('/', (req,res) => {
-    res.json(ESTADOS)
+router.get('/',async (req,res)=>{
+    const estados = await mongo.estados()
+    res.json(await estados.find({}).toArray())
 })
 
-router.get('/:sigla', (req,res) => {
+router.post('/',async (req,res)=>{
+    const { sigla, nome } = req.body
+    if(!sigla || !nome) {
+        res.send(400).send('Missing arguments')
+        return
+    }
+    const estado = {
+        nome,
+        sigla
+    }
+    const estados = await mongo.estados()
+    await estados.insertOne(estado)
+    res.sendStatus(201)
+})
+
+router.get('/:sigla',async (req,res)=>{
     const { sigla } = req.params
-    const estadoRespectivoASigla = estadoRespectivoASigla.find(estadoRespectivoASigla => estadoRespectivoASigla.sigla === sigla)
-    if(estadoRespectivoASigla){
-        res.json(estadoRespectivoASigla)
-    }else{
+    const estados = await mongo.estados()
+    const query = {sigla: {$regex: `^${sigla}$`, $options: 'i'}}
+    const estado = await estados.findOne(query)
+    if (estado)
+        res.json(estado)
+    else
         res.sendStatus(404)
-    }    
 })
 
-router.get('/:sigla/cidades/:id', (req,res) => {
-    req.sigla = req.params.sigla
-})
-
+router.use('/:sigla/cidades', (req,res, next)=> {
+    const { sigla } = req.params
+    req.parentParams = {}
+    req.parentParams.sigla = sigla.toUpperCase()
+    next()
+}, cidadesRouter)
 
 module.exports = router

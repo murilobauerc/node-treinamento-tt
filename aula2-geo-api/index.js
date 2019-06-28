@@ -1,15 +1,12 @@
+const PORT = 8080
 const express = require('express')
 const bodyParser = require('body-parser')
 const app = express()
-const PORT = 8090
 const estadosRouter = require('./routes/estados')
+const authMiddleware = require('./middlewares/auth')
 
-app
-.use(bodyParser.json())
-.get('/', (req,res) => {
-    res.send('Hello')
-})
-.use('/estados', estadosRouter)
+// app.use(authMiddleware)
+app.use(bodyParser.json())
+app.use('/estados',estadosRouter)
 
-
-app.listen(PORT, () => console.log(`servidor rodando na porta ${PORT}...`))  
+app.listen(PORT, ()=>console.log('Geo API rodando em localhost:',PORT))

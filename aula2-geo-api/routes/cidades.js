@@ -1,23 +1,49 @@
+const { ObjectId } = require('mongodb')
 const express = require('express')
-const router = express.Router
-const CIDADES = require('../assets/cidades.json')
+const router = express.Router()
+// const jsonloader = require('../services/jsonloader')
+// const autoincrement = require('../util/autoincrement')
 
-router.get('/', (req,res) => {
-    res.json(CIDADES)
+const mongo = require('../data/mongo')
+// const estados = jsonloader('estados.json')
+// const cidades = jsonloader('cidades.json')
+
+
+router.get('/',async (req,res)=>{
+    const { sigla } = req.parentParams
+    const cidades = await mongo.cidades()
+    const query = {estado: {$regex: `^${sigla}$`, $options: 'i'}}
+    return res.json(await cidades.find(query).toArray())
+})
+router.post('/',async (req,res)=>{
+    const { sigla } = req.parentParams
+    const { nome } = req.body
+    if(!nome) {
+        res.send(400).send('Missing arguments')
+        return
+    }
+    const cidade = {
+        nome,
+        estado: sigla
+    }
+    const cidades = await mongo.cidades()
+    await cidades.insertOne(cidade)
+    res.sendStatus(201)
 })
 
-// .get('/:id', (req,res) => {
-//     const { sigla } = req
-//     const { id } = 
-// })
+router.get('/:id',async (req,res)=>{
+    const { sigla } = req.parentParams
+    const { id } = req.params
 
-// .get('/:sigla/cidades', (req,res) => {
-//     const {sigla} = req.params
-//     const estadoRespSiglaCid = estadoRespSiglaCid.filter()
-// })
+    const cidades = await mongo.cidades()
+    const query = {_id: ObjectId(id), estado: {$regex: `^${sigla}$`, $options: 'i'}}
 
-router.get('/:sigla/cidades/:id', (req,res) => {
-    req.sigla = req.params.sigla
+    const cidade = await cidades.findOne(query)
+    if (cidade)
+        res.json(cidade)
+    else
+        res.sendStatus(404)
 })
+
 
 module.exports = router
